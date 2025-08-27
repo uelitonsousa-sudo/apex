@@ -22,7 +22,7 @@
                 Gestão de Células
             </h1>
             <p class="text-sm text-gray-500 mt-1">
-                Versão v9.0 - Correção para erro de configuração
+                Versão v11.0 - Correção de Sintaxe JSON
             </p>
         </header>
 
@@ -102,11 +102,11 @@
         // Importa os módulos necessários do Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, addDoc, onSnapshot, collection, query, orderBy, serverTimestamp, where, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, addDoc, onSnapshot, collection, query, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Variáveis globais fornecidas pelo ambiente do Canvas.
-        // O valor de __firebase_config é injetado de forma segura no ambiente.
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfigRaw = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         let db, auth;
@@ -127,36 +127,6 @@
             statusMessageEl.classList.toggle('bg-blue-100', !isError);
             statusMessageEl.classList.toggle('text-blue-700', !isError);
         }
-        
-        // Verificação e substituição da configuração do Firebase
-        // Esta é uma solução temporária para o erro "Configuração não encontrada".
-        // A sua configuração completa do Firebase deve ser colada aqui.
-        let firebaseConfigRaw = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
-        if (!firebaseConfigRaw) {
-            // AVISO: A sua configuração do Firebase não está a ser fornecida pelo ambiente.
-            // Para continuar, você deve colar o seu objeto de configuração aqui.
-            // Isso pode expor a sua chave de API publicamente.
-            firebaseConfigRaw = `
-                /* COLE AQUI O SEU OBJETO DE CONFIGURAÇÃO DO FIREBASE */
-                // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyDTkhTnPsKwMJk0WJIaXuucsrrqPtEyJno",
-  authDomain: "gestao-celulas.firebaseapp.com",
-  projectId: "gestao-celulas",
-  storageBucket: "gestao-celulas.firebasestorage.app",
-  messagingSenderId: "757537601375",
-  appId: "1:757537601375:web:8ce78b40552a1ce5a8e8ea"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-            `;
-        }
 
         // Função para inicializar o Firebase
         async function initializeFirebase() {
@@ -168,9 +138,6 @@ const app = initializeApp(firebaseConfig);
                 }
 
                 const firebaseConfig = JSON.parse(firebaseConfigRaw);
-
-                // Regista a configuração no console para depuração
-                console.log("A tentar inicializar com a seguinte configuração do Firebase:", firebaseConfig);
 
                 // Inicializa a aplicação e serviços do Firebase
                 const app = initializeApp(firebaseConfig);
@@ -219,7 +186,7 @@ const app = initializeApp(firebaseConfig);
 
         // Carrega os relatórios do Firestore
         function loadReports() {
-            if (!userId) return; // Garante que a autenticação foi concluída
+            if (!userId) return;
 
             const reportsPath = `/artifacts/${appId}/users/${userId}/reports`;
             const reportsQuery = query(collection(db, reportsPath));
@@ -296,7 +263,7 @@ const app = initializeApp(firebaseConfig);
 
         // Carrega os membros do Firestore
         function loadMembers() {
-            if (!userId) return; // Garante que a autenticação foi concluída
+            if (!userId) return;
 
             const membersPath = `/artifacts/${appId}/users/${userId}/members`;
             const membersQuery = query(collection(db, membersPath));
