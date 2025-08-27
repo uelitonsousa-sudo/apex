@@ -22,7 +22,7 @@
                 Gestão de Células
             </h1>
             <p class="text-sm text-gray-500 mt-1">
-                Versão v4.0 - Com fallback para configuração do Firebase
+                Versão v6.0 - Com sua configuração de Firebase
             </p>
         </header>
 
@@ -141,18 +141,24 @@
                 if (firebaseConfigRaw) {
                     firebaseConfig = JSON.parse(firebaseConfigRaw);
                 } else {
-                    // Configuração de fallback, se a do ambiente não estiver disponível
-                    // SUBSTITUA ISTO PELA SUA CONFIGURAÇÃO REAL DO PROJETO FIREBASE
+                    // Configuração de fallback.
+                    // ATENÇÃO: SUBSTITUA os valores abaixo pela SUA configuração REAL do projeto Firebase.
+                    // A chave de API do Firebase para aplicações web NÃO é um segredo. 
+                    // É seguro incluí-la no código do lado do cliente. 
+                    // A segurança dos dados é garantida pelas Regras de Segurança do Firestore.
                     firebaseConfig = {
-                        apiKey: "SUA_API_KEY_AQUI", // Exemplo: "AIzaSyC_xxxxxxxxxxxxxxxxxxxxx"
-                        authDomain: "SUA_AUTH_DOMAIN_AQUI", // Exemplo: "meu-projeto.firebaseapp.com"
-                        projectId: "SEU_PROJECT_ID_AQUI", // Exemplo: "meu-projeto"
-                        storageBucket: "SEU_STORAGE_BUCKET_AQUI", // Exemplo: "meu-projeto.appspot.com"
-                        messagingSenderId: "SEU_MESSAGING_SENDER_ID_AQUI", // Exemplo: "123456789012"
-                        appId: "SEU_APP_ID_AQUI" // Exemplo: "1:123456789012:web:abcdefg1234567890"
+                        apiKey: "AIzaSyD4kYi7PAof_xVlX1k3LveG7EivwWL5gQU", 
+                        authDomain: "gestao-celulas.firebaseapp.com", 
+                        projectId: "gestao-celulas", 
+                        storageBucket: "gestao-celulas.firebasestorage.app",
+                        messagingSenderId: "757537601375", 
+                        appId: "1:757537601375:web:8ce78b40552a1ce5a8e8ea" 
                     };
-                    showStatus("Aviso: Configuração do Firebase do ambiente não encontrada. A usar configuração de fallback.", true);
+                    showStatus("Aviso: Configuração do Firebase do ambiente não encontrada. Por favor, edite o código para inserir a sua configuração.", true);
                 }
+
+                // **NOVA ADIÇÃO:** Regista a configuração no console para depuração
+                console.log("A tentar inicializar com a seguinte configuração do Firebase:", firebaseConfig);
 
                 // Inicializa a aplicação e serviços do Firebase
                 const app = initializeApp(firebaseConfig);
