@@ -22,7 +22,7 @@
                 Gestão de Células
             </h1>
             <p class="text-sm text-gray-500 mt-1">
-                Versão v6.0 - Com sua configuração de Firebase
+                Versão v7.0 - Agora com a sua configuração de Firebase
             </p>
         </header>
 
@@ -104,10 +104,8 @@
         import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, addDoc, onSnapshot, collection, query, orderBy, serverTimestamp, where, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Variáveis globais fornecidas pelo ambiente do Canvas
-        // __firebase_config: A sua configuração do Firebase (JSON)
-        // __app_id: O ID da aplicação no Canvas
-        // __initial_auth_token: Token de autenticação inicial para o Firebase
+        // Variáveis globais fornecidas pelo ambiente do Canvas.
+        // O valor de __firebase_config é injetado de forma segura no ambiente.
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfigRaw = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
@@ -135,27 +133,12 @@
         async function initializeFirebase() {
             showStatus('A carregar...');
             try {
-                let firebaseConfig;
-
-                // Tenta usar a configuração do ambiente, se disponível
-                if (firebaseConfigRaw) {
-                    firebaseConfig = JSON.parse(firebaseConfigRaw);
-                } else {
-                    // Configuração de fallback.
-                    // ATENÇÃO: SUBSTITUA os valores abaixo pela SUA configuração REAL do projeto Firebase.
-                    // A chave de API do Firebase para aplicações web NÃO é um segredo. 
-                    // É seguro incluí-la no código do lado do cliente. 
-                    // A segurança dos dados é garantida pelas Regras de Segurança do Firestore.
-                    firebaseConfig = {
-                        apiKey: "AIzaSyD4kYi7PAof_xVlX1k3LveG7EivwWL5gQU", 
-                        authDomain: "gestao-celulas.firebaseapp.com", 
-                        projectId: "gestao-celulas", 
-                        storageBucket: "gestao-celulas.firebasestorage.app",
-                        messagingSenderId: "757537601375", 
-                        appId: "1:757537601375:web:8ce78b40552a1ce5a8e8ea" 
-                    };
-                    showStatus("Aviso: Configuração do Firebase do ambiente não encontrada. Por favor, edite o código para inserir a sua configuração.", true);
+                if (!firebaseConfigRaw) {
+                    showStatus("Erro: Configuração do Firebase não encontrada. Não é possível iniciar a aplicação. Por favor, verifique a documentação da sua plataforma.", true);
+                    return;
                 }
+
+                const firebaseConfig = JSON.parse(firebaseConfigRaw);
 
                 // **NOVA ADIÇÃO:** Regista a configuração no console para depuração
                 console.log("A tentar inicializar com a seguinte configuração do Firebase:", firebaseConfig);
