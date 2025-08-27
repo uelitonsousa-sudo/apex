@@ -36,7 +36,7 @@
             background-color: rgba(0, 0, 0, 0.5);
             display: flex;
             justify-content: center;
-            align-sitems: center;
+            align-items: center;
             z-index: 1000;
         }
         .modal-content {
@@ -105,7 +105,24 @@
         setDoc,
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // Variáveis globais fornecidas pelo ambiente Canvas
+    // Variáveis de ambiente fornecidas pelo ambiente de desenvolvimento
+    const __app_id = 'gerenciamento-celulas'; // Use um nome de sua escolha
+    const __firebase_config = JSON.stringify({
+        // INSIRA A SUA CONFIGURAÇÃO DO FIREBASE AQUI
+        // Exemplo: apiKey: "...", authDomain: "...", projectId: "...", ...
+        const firebaseConfig = {
+        apiKey: "AIzaSyA78tNlTH7ynf1exNSSHad3nbk1lW9AIRM",
+        authDomain: "gestao-celulas.firebaseapp.com",
+        projectId: "gestao-celulas",
+        storageBucket: "gestao-celulas.firebasestorage.app",
+        messagingSenderId: "757537601375",
+        appId: "1:757537601375:web:8ce78b40552a1ce5a8e8ea"
+};
+    });
+    // O token de autenticação não é necessário no GitHub Pages, pois vamos usar autenticação anónima
+    const __initial_auth_token = null;
+
+    // Variáveis globais (preferíveis)
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
     const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
     const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
@@ -171,6 +188,17 @@
     async function initializeAppAndFirebase() {
         showLoading(true);
         try {
+            if (Object.keys(firebaseConfig).length === 0) {
+                appContainer.innerHTML = `
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                        <strong class="font-bold">Erro!</strong>
+                        <span class="block sm:inline">As configurações do Firebase estão em falta. Por favor, adicione as suas configurações no código.</span>
+                    </div>
+                `;
+                showLoading(false);
+                return;
+            }
+
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
@@ -190,7 +218,7 @@
                     userRole = 'leader'; // Assume leader por padrão
                     userEmail = user.isAnonymous ? 'utilizador-anonimo@exemplo.com' : user.email;
                     
-                    // Simula que o utilizador é um administrador
+                    // Simula que o utilizador é um administrador para ter acesso aos painéis de gestão
                     userRole = 'admin';
 
                     console.log("Utilizador autenticado. userId:", userId);
@@ -204,10 +232,10 @@
 
                             <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
                                 <p class="text-gray-500 text-sm mb-2">Conectado como: <span class="font-bold text-blue-500 capitalize">${userRole}</span></p>
-                                <p class="text-gray-500 text-sm">E-mail: <span class="text-blue-500 font-mono">${userEmail}</span></p>
+                                <p class="text-gray-500 text-sm">ID de Utilizador: <span class="text-blue-500 font-mono">${userId}</span></p>
                             </div>
                             
-                            <!-- Painel de Gerenciamento de Membros (Visível para ambos os perfis, mas apenas o líder o usa) -->
+                            <!-- Painel de Gerenciamento de Membros (Visível para ambos os perfis) -->
                             <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
                                 <h2 class="text-2xl font-bold text-blue-700 mb-4">Gerir Membros</h2>
                                 <p class="text-gray-500 mb-4">Adicione e remova membros da célula aqui.</p>
@@ -273,10 +301,10 @@
                         const sortOrder = document.getElementById('sort-order');
                         const clearFiltersBtn = document.getElementById('clear-filters-btn');
 
-                        leaderFilter.addEventListener('input', () => setupRealtimeReports());
-                        dateFilter.addEventListener('change', () => setupRealtimeReports());
-                        sortOrder.addEventListener('change', () => setupRealtimeReports());
-                        clearFiltersBtn.addEventListener('click', () => {
+                        if (leaderFilter) leaderFilter.addEventListener('input', () => setupRealtimeReports());
+                        if (dateFilter) dateFilter.addEventListener('change', () => setupRealtimeReports());
+                        if (sortOrder) sortOrder.addEventListener('change', () => setupRealtimeReports());
+                        if (clearFiltersBtn) clearFiltersBtn.addEventListener('click', () => {
                             leaderFilter.value = '';
                             dateFilter.value = '';
                             sortOrder.value = 'desc';
@@ -296,7 +324,7 @@
             appContainer.innerHTML = `
                 <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
                     <strong class="font-bold">Erro!</strong>
-                    <span class="block sm:inline">Não foi possível inicializar a aplicação.</span>
+                    <span class="block sm:inline">Não foi possível inicializar a aplicação. Verifique a consola para mais detalhes.</span>
                 </div>
             `;
             showLoading(false);
@@ -314,7 +342,7 @@
         
         // A coleção de membros está agora ligada ao ID do utilizador autenticado
         const membersCollectionRef = collection(db, `/artifacts/${appId}/users/${userId}/members`);
-        const q = query(membersCollectionRef, orderBy('name', 'asc'));
+        const q = query(membersCollectionRef);
 
         onSnapshot(q, (snapshot) => {
             members = [];
