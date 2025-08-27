@@ -1,864 +1,346 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Relatório de Células</title>
+    <title>Gestão de Células</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
-        }
-        .main-container {
-            max-width: 900px;
-            margin: auto;
-            padding: 1rem;
-        }
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255, 255, 255, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .modal-content {
-            background-color: white;
-            padding: 2rem;
-            border-radius: 1rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            color: #1f2937;
         }
     </style>
 </head>
-<body>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
 
-<div id="app" class="main-container">
-    <!-- O conteúdo da aplicação será renderizado aqui pelo JavaScript -->
-</div>
+    <div id="app-container" class="bg-white p-6 md:p-8 rounded-2xl shadow-xl w-full max-w-4xl space-y-8">
+        <!-- Título da Aplicação -->
+        <header class="text-center">
+            <h1 class="text-3xl md:text-4xl font-extrabold text-blue-800">
+                Gestão de Células
+            </h1>
+            <p class="text-sm text-gray-500 mt-1">
+                Versão v2.0 - Corrigida para pré-visualização no Canvas
+            </p>
+        </header>
 
-<div id="loading-overlay" class="loading-overlay hidden">
-    <div class="flex flex-col items-center">
-        <svg class="animate-spin -ml-1 mr-3 h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-        <p class="mt-4 text-gray-700">A carregar...</p>
-    </div>
-</div>
-
-<!-- Modal para mensagens -->
-<div id="message-modal" class="modal hidden">
-    <div class="modal-content text-center">
-        <p id="modal-message" class="text-lg font-semibold text-gray-800 mb-4"></p>
-        <button id="modal-close-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Ok</button>
-    </div>
-</div>
-
-<!-- Modal de confirmação para exclusão -->
-<div id="confirm-modal" class="modal hidden">
-    <div class="modal-content text-center">
-        <p class="text-lg font-semibold text-gray-800 mb-4">Tem certeza que quer apagar este relatório?</p>
-        <div class="flex justify-center space-x-4">
-            <button id="confirm-delete-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Apagar</button>
-            <button id="cancel-delete-btn" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400">Cancelar</button>
+        <!-- Mensagem de status do Firebase -->
+        <div id="status-message" class="hidden p-4 rounded-xl bg-red-100 text-red-700 text-center font-semibold">
+            <p>A carregar...</p>
         </div>
-    </div>
-</div>
 
-<script type="module">
-    // Importações do Firebase
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { 
-        getAuth,
-        signInAnonymously,
-        signInWithCustomToken,
-        onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { 
-        getFirestore, 
-        collection, 
-        addDoc, 
-        onSnapshot, 
-        query, 
-        orderBy, 
-        serverTimestamp, 
-        where, 
-        doc, 
-        deleteDoc, 
-        setDoc,
-    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-    // Variáveis de ambiente fornecidas pelo ambiente de desenvolvimento
-    const __app_id = 'gerenciamento-celulas'; // Use um nome de sua escolha
-    const __firebase_config = JSON.stringify({
-        // INSIRA A SUA CONFIGURAÇÃO DO FIREBASE AQUI
-        // Exemplo: apiKey: "...", authDomain: "...", projectId: "...", ...
-        const firebaseConfig = {
-        apiKey: "AIzaSyA78tNlTH7ynf1exNSSHad3nbk1lW9AIRM",
-        authDomain: "gestao-celulas.firebaseapp.com",
-        projectId: "gestao-celulas",
-        storageBucket: "gestao-celulas.firebasestorage.app",
-        messagingSenderId: "757537601375",
-        appId: "1:757537601375:web:8ce78b40552a1ce5a8e8ea"
-};
-    });
-    // O token de autenticação não é necessário no GitHub Pages, pois vamos usar autenticação anónima
-    const __initial_auth_token = null;
-
-    // Variáveis globais (preferíveis)
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-    
-    // Elementos da UI
-    const appContainer = document.getElementById('app');
-    const loadingOverlay = document.getElementById('loading-overlay');
-    const messageModal = document.getElementById('message-modal');
-    const modalMessage = document.getElementById('modal-message');
-    const modalCloseBtn = document.getElementById('modal-close-btn');
-    const confirmModal = document.getElementById('confirm-modal');
-    const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
-    const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
-
-    // Variáveis de estado da aplicação
-    let db, auth, userId, userRole, userEmail;
-    let members = []; // Lista de membros será preenchida dinamicamente
-    let reportToDeleteId = null; // ID do relatório a ser apagado
-
-    // Adiciona listener para fechar o modal
-    modalCloseBtn.addEventListener('click', () => {
-        messageModal.classList.add('hidden');
-    });
-
-    // Listeners para o modal de confirmação
-    cancelDeleteBtn.addEventListener('click', () => {
-        confirmModal.classList.add('hidden');
-        reportToDeleteId = null;
-    });
-
-    confirmDeleteBtn.addEventListener('click', () => {
-        if (reportToDeleteId) {
-            deleteReport(reportToDeleteId);
-        }
-        confirmModal.classList.add('hidden');
-        reportToDeleteId = null;
-    });
-
-    /**
-     * Exibe um modal de mensagem.
-     * @param {string} message - A mensagem a ser exibida.
-     */
-    function showMessage(message) {
-        modalMessage.textContent = message;
-        messageModal.classList.remove('hidden');
-    }
-
-    /**
-     * Exibe ou oculta o overlay de carregamento.
-     * @param {boolean} show - True para exibir, False para ocultar.
-     */
-    function showLoading(show) {
-        if (show) {
-            loadingOverlay.classList.remove('hidden');
-        } else {
-            loadingOverlay.classList.add('hidden');
-        }
-    }
-
-    /**
-     * Inicializa o Firebase e a aplicação.
-     */
-    async function initializeAppAndFirebase() {
-        showLoading(true);
-        try {
-            if (Object.keys(firebaseConfig).length === 0) {
-                appContainer.innerHTML = `
-                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                        <strong class="font-bold">Erro!</strong>
-                        <span class="block sm:inline">As configurações do Firebase estão em falta. Por favor, adicione as suas configurações no código.</span>
+        <!-- Seção de Relatórios -->
+        <section class="space-y-6">
+            <div class="flex items-center justify-between">
+                <h2 class="text-2xl font-bold text-gray-800">Relatórios de Célula</h2>
+            </div>
+            
+            <form id="report-form" class="bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="report-date" class="block text-sm font-medium text-gray-700">Data do Relatório</label>
+                        <input type="date" id="report-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 transition-colors duration-200 p-2 border" required>
                     </div>
-                `;
-                showLoading(false);
-                return;
-            }
-
-            const app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-            
-            // Tenta fazer o login com o token personalizado se ele existir
-            if (initialAuthToken) {
-                await signInWithCustomToken(auth, initialAuthToken);
-            } else {
-                await signInAnonymously(auth);
-            }
-            
-            // Ouve as mudanças no estado de autenticação para garantir que o utilizador está logado
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    // O utilizador está logado, obtemos o seu ID e role
-                    userId = user.uid;
-                    userRole = 'leader'; // Assume leader por padrão
-                    userEmail = user.isAnonymous ? 'utilizador-anonimo@exemplo.com' : user.email;
-                    
-                    // Simula que o utilizador é um administrador para ter acesso aos painéis de gestão
-                    userRole = 'admin';
-
-                    console.log("Utilizador autenticado. userId:", userId);
-                    
-                    // Renderiza a UI principal da aplicação com base na função do utilizador.
-                    appContainer.innerHTML = `
-                        <div class="space-y-8 p-4">
-                            <div class="flex justify-between items-center mb-4">
-                                <h1 class="text-3xl font-bold text-blue-700">Relatório de Células</h1>
-                            </div>
-
-                            <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
-                                <p class="text-gray-500 text-sm mb-2">Conectado como: <span class="font-bold text-blue-500 capitalize">${userRole}</span></p>
-                                <p class="text-gray-500 text-sm">ID de Utilizador: <span class="text-blue-500 font-mono">${userId}</span></p>
-                            </div>
-                            
-                            <!-- Painel de Gerenciamento de Membros (Visível para ambos os perfis) -->
-                            <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
-                                <h2 class="text-2xl font-bold text-blue-700 mb-4">Gerir Membros</h2>
-                                <p class="text-gray-500 mb-4">Adicione e remova membros da célula aqui.</p>
-                                <div id="member-management-container"></div>
-                            </div>
-
-                            <!-- Formulário de Relatório (Visível para ambos os perfis) -->
-                            <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
-                                <h1 class="text-3xl font-bold text-center text-blue-700 mb-2">Submeter Relatório</h1>
-                                <p class="text-center text-gray-500 mb-6">Preencha este formulário após a reunião da célula.</p>
-                                <div id="form-container"></div>
-                            </div>
-                            
-                            <!-- Tabela de Relatórios (Visível apenas para Administradores) -->
-                            <div id="reports-panel" class="bg-white rounded-xl shadow-lg p-6 md:p-8 ${userRole !== 'admin' ? 'hidden' : ''}">
-                                <h2 class="text-2xl font-bold text-blue-700 mb-4">Relatórios Submetidos</h2>
-                                <p class="text-gray-500 mb-4">Esta tabela é visível apenas para administradores.</p>
-                                <div id="reports-controls" class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4 mb-4">
-                                    <div class="flex-grow flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 w-full">
-                                        <input type="text" id="leader-filter" placeholder="Filtrar por Líder ou Célula..."
-                                            class="flex-1 p-2 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border">
-                                        <input type="date" id="date-filter"
-                                            class="flex-1 p-2 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border">
-                                    </div>
-                                    <div class="flex space-x-2">
-                                        <select id="sort-order" class="p-2 rounded-md border-gray-300 shadow-sm border focus:border-blue-500 focus:ring-blue-500">
-                                            <option value="desc">Mais Recente</option>
-                                            <option value="asc">Mais Antigo</option>
-                                        </select>
-                                        <button id="clear-filters-btn" class="px-4 py-2 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400">
-                                            Limpar
-                                        </button>
-                                    </div>
-                                </div>
-                                <div id="reports-table-container">
-                                    <p class="text-gray-500">Nenhum relatório encontrado.</p>
-                                </div>
-                            </div>
-
-                            <!-- Painel de Gestão de Utilizadores (Visível apenas para Administradores) -->
-                            <div id="user-management-panel" class="bg-white rounded-xl shadow-lg p-6 md:p-8 ${userRole !== 'admin' ? 'hidden' : ''}">
-                                <h2 class="text-2xl font-bold text-blue-700 mb-4">Gestão de Utilizadores</h2>
-                                <p class="text-gray-500 mb-4">Gerir as funções dos utilizadores.</p>
-                                <div id="user-management-table-container">
-                                    <p class="text-gray-500">A carregar utilizadores...</p>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    
-                    // As chamadas para carregar os dados são feitas aqui, garantindo que o `userId` já está disponível
-                    renderForm();
-                    setupRealtimeMembers();
-                    
-                    // Apenas configura os relatórios e gestão de utilizadores se o utilizador for um administrador
-                    if (userRole === 'admin') {
-                        setupRealtimeReports();
-                        setupRealtimeUserManagement();
-
-                        // Adiciona event listeners para os filtros dos relatórios
-                        const leaderFilter = document.getElementById('leader-filter');
-                        const dateFilter = document.getElementById('date-filter');
-                        const sortOrder = document.getElementById('sort-order');
-                        const clearFiltersBtn = document.getElementById('clear-filters-btn');
-
-                        if (leaderFilter) leaderFilter.addEventListener('input', () => setupRealtimeReports());
-                        if (dateFilter) dateFilter.addEventListener('change', () => setupRealtimeReports());
-                        if (sortOrder) sortOrder.addEventListener('change', () => setupRealtimeReports());
-                        if (clearFiltersBtn) clearFiltersBtn.addEventListener('click', () => {
-                            leaderFilter.value = '';
-                            dateFilter.value = '';
-                            sortOrder.value = 'desc';
-                            setupRealtimeReports();
-                        });
-                    }
-                    // Oculta o loading overlay após a UI ser renderizada e os listeners configurados
-                    showLoading(false);
-                } else {
-                    console.error("Nenhum utilizador encontrado após a tentativa de login.");
-                    appContainer.innerHTML = `<p class="text-red-500">Erro de autenticação. Por favor, tente novamente.</p>`;
-                    showLoading(false);
-                }
-            });
-        } catch (error) {
-            console.error("Erro ao inicializar o Firebase:", error);
-            appContainer.innerHTML = `
-                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                    <strong class="font-bold">Erro!</strong>
-                    <span class="block sm:inline">Não foi possível inicializar a aplicação. Verifique a consola para mais detalhes.</span>
+                    <div>
+                        <label for="report-present" class="block text-sm font-medium text-gray-700">Presentes</label>
+                        <input type="number" id="report-present" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 transition-colors duration-200 p-2 border" required>
+                    </div>
                 </div>
-            `;
-            showLoading(false);
-        }
-    }
+                <div>
+                    <label for="report-notes" class="block text-sm font-medium text-gray-700">Observações</label>
+                    <textarea id="report-notes" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 transition-colors duration-200 p-2 border"></textarea>
+                </div>
+                <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                    Adicionar Relatório
+                </button>
+            </form>
 
-    /**
-     * Configura o listener em tempo real para os membros.
-     */
-    function setupRealtimeMembers() {
-        if (!userId) {
-            console.error("userId não disponível para carregar membros.");
-            return;
-        }
+            <div id="reports-list" class="space-y-4">
+                <!-- Relatórios serão adicionados aqui -->
+            </div>
+        </section>
         
-        // A coleção de membros está agora ligada ao ID do utilizador autenticado
-        const membersCollectionRef = collection(db, `/artifacts/${appId}/users/${userId}/members`);
-        const q = query(membersCollectionRef);
+        <!-- --- -->
 
-        onSnapshot(q, (snapshot) => {
-            members = [];
-            snapshot.forEach(doc => {
-                members.push({ id: doc.id, ...doc.data() });
-            });
-            renderMemberManagement(members); // Renderiza a lista de gerenciamento
-            renderForm(); // Renderiza o formulário com a nova lista de membros
-        }, (error) => {
-            console.error("Erro ao carregar membros:", error);
-            document.getElementById('member-management-container').innerHTML = `<p class="text-red-500">Erro ao carregar a lista de membros.</p>`;
-        });
-    }
+        <!-- Seção de Membros -->
+        <section class="space-y-6">
+            <div class="flex items-center justify-between">
+                <h2 class="text-2xl font-bold text-gray-800">Membros da Célula</h2>
+            </div>
 
-    /**
-     * Renderiza o painel de gerenciamento de membros.
-     * @param {Array<Object>} membersList - A lista de membros.
-     */
-    function renderMemberManagement(membersList) {
-        const container = document.getElementById('member-management-container');
-        if (!container) return;
-        
-        container.innerHTML = `
-            <!-- Formulário para Adicionar Membro -->
-            <form id="add-member-form" class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 mb-6">
-                <input type="text" id="member-name-input" name="memberName" required placeholder="Nome do membro"
-                       class="w-full sm:flex-1 p-2 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border">
-                <button type="submit"
-                        class="w-full sm:w-auto px-4 py-2 text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+            <form id="member-form" class="bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="member-name" class="block text-sm font-medium text-gray-700">Nome do Membro</label>
+                        <input type="text" id="member-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 transition-colors duration-200 p-2 border" required>
+                    </div>
+                    <div>
+                        <label for="member-age" class="block text-sm font-medium text-gray-700">Idade</label>
+                        <input type="number" id="member-age" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 transition-colors duration-200 p-2 border">
+                    </div>
+                </div>
+                <div>
+                    <label for="member-contact" class="block text-sm font-medium text-gray-700">Contacto</label>
+                    <input type="tel" id="member-contact" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 transition-colors duration-200 p-2 border">
+                </div>
+                <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
                     Adicionar Membro
                 </button>
             </form>
 
-            <!-- Lista de Membros -->
-            <div id="members-list-display" class="space-y-2">
-                ${membersList.length > 0 ? membersList.map(member => `
-                    <div class="flex items-center justify-between bg-gray-100 p-3 rounded-lg shadow-sm">
-                        <span class="text-sm font-medium text-gray-700">${member.name}</span>
-                        <button type="button" data-id="${member.id}" class="text-red-500 hover:text-red-700 text-sm delete-member-btn">Remover</button>
-                    </div>
-                `).join('') : '<p class="text-gray-500">Nenhum membro cadastrado. Adicione um para começar.</p>'}
+            <div id="members-list" class="space-y-4">
+                <!-- Membros serão adicionados aqui -->
             </div>
-        `;
+        </section>
 
-        // Adiciona evento ao formulário de adição de membro
-        document.getElementById('add-member-form').addEventListener('submit', addMember);
+    </div>
 
-        // Adiciona eventos aos botões de remoção
-        document.querySelectorAll('.delete-member-btn').forEach(button => {
-            button.addEventListener('click', deleteMember);
-        });
-    }
+    <!-- Scripts do Firebase -->
+    <script type="module">
+        // Importa os módulos necessários do Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, addDoc, onSnapshot, collection, query, orderBy, serverTimestamp, where, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    /**
-     * Adiciona um novo membro ao Firestore.
-     * @param {Event} event - O evento de submissão do formulário.
-     */
-    async function addMember(event) {
-        event.preventDefault();
-        showLoading(true);
-        const form = event.target;
-        const memberName = form.memberName.value.trim();
+        // Variáveis globais fornecidas pelo ambiente do Canvas
+        // __firebase_config: A sua configuração do Firebase (JSON)
+        // __app_id: O ID da aplicação no Canvas
+        // __initial_auth_token: Token de autenticação inicial para o Firebase
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfigRaw = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        if (memberName) {
+        let db, auth;
+        let userId;
+
+        const statusMessageEl = document.getElementById('status-message');
+        const reportForm = document.getElementById('report-form');
+        const memberForm = document.getElementById('member-form');
+        const reportsList = document.getElementById('reports-list');
+        const membersList = document.getElementById('members-list');
+
+        // Função para mostrar mensagens de status
+        function showStatus(message, isError = false) {
+            statusMessageEl.textContent = message;
+            statusMessageEl.classList.remove('hidden');
+            statusMessageEl.classList.toggle('bg-red-100', isError);
+            statusMessageEl.classList.toggle('text-red-700', isError);
+            statusMessageEl.classList.toggle('bg-blue-100', !isError);
+            statusMessageEl.classList.toggle('text-blue-700', !isError);
+        }
+
+        // Função para inicializar o Firebase
+        async function initializeFirebase() {
+            showStatus('A carregar...');
             try {
-                const membersCollectionRef = collection(db, `/artifacts/${appId}/users/${userId}/members`);
-                await addDoc(membersCollectionRef, { name: memberName });
-                form.reset();
+                if (!firebaseConfigRaw) {
+                    throw new Error("A sua configuração do Firebase não foi encontrada. Por favor, adicione-a no topo do código.");
+                }
+
+                const firebaseConfig = JSON.parse(firebaseConfigRaw);
+
+                // Inicializa a aplicação e serviços do Firebase
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Autentica o utilizador
+                await new Promise((resolve, reject) => {
+                    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+                        unsubscribe();
+                        if (user) {
+                            userId = user.uid;
+                            showStatus(`Autenticado com sucesso. ID do utilizador: ${userId}`, false);
+                            resolve();
+                        } else {
+                            try {
+                                if (initialAuthToken) {
+                                    const userCredential = await signInWithCustomToken(auth, initialAuthToken);
+                                    userId = userCredential.user.uid;
+                                    showStatus(`Autenticado com sucesso. ID do utilizador: ${userId}`, false);
+                                } else {
+                                    const userCredential = await signInAnonymously(auth);
+                                    userId = userCredential.user.uid;
+                                    showStatus(`A utilizar modo anónimo. ID do utilizador: ${userId}`, false);
+                                }
+                                resolve();
+                            } catch (error) {
+                                showStatus(`Erro ao autenticar: ${error.message}`, true);
+                                reject(error);
+                            }
+                        }
+                    });
+                });
+
+                // Carrega os dados após a autenticação
+                loadReports();
+                loadMembers();
+
             } catch (error) {
-                console.error("Erro ao adicionar membro:", error);
-                showMessage("Erro ao adicionar membro.");
-            } finally {
-                showLoading(false);
+                console.error("Erro de inicialização do Firebase:", error);
+                showStatus(`Erro ao inicializar a aplicação: ${error.message}. Por favor, verifique a sua configuração do Firebase.`, true);
             }
         }
-    }
 
-    /**
-     * Remove um membro do Firestore.
-     * @param {Event} event - O evento de clique.
-     */
-    async function deleteMember(event) {
-        const memberId = event.target.dataset.id;
-        showLoading(true);
-        try {
-            const memberDocRef = doc(db, `/artifacts/${appId}/users/${userId}/members`, memberId);
-            await deleteDoc(memberDocRef);
-        } catch (error) {
-            console.error("Erro ao remover membro:", error);
-            showMessage("Erro ao remover membro.");
-        } finally {
-            showLoading(false);
+        // --- Funções para Relatórios ---
+
+        // Carrega os relatórios do Firestore
+        function loadReports() {
+            if (!userId) return; // Garante que a autenticação foi concluída
+
+            const reportsPath = `/artifacts/${appId}/users/${userId}/reports`;
+            const reportsQuery = query(collection(db, reportsPath));
+
+            onSnapshot(reportsQuery, (querySnapshot) => {
+                reportsList.innerHTML = '';
+                if (querySnapshot.empty) {
+                    reportsList.innerHTML = '<p class="text-center text-gray-500">Nenhum relatório adicionado ainda.</p>';
+                    return;
+                }
+                querySnapshot.forEach((doc) => {
+                    const report = doc.data();
+                    const reportId = doc.id;
+                    const reportEl = document.createElement('div');
+                    reportEl.classList.add('bg-white', 'p-4', 'rounded-xl', 'border', 'border-gray-200', 'shadow-sm', 'relative');
+                    reportEl.innerHTML = `
+                        <p class="text-sm text-gray-500"><strong>Data:</strong> ${new Date(report.date).toLocaleDateString()}</p>
+                        <p class="text-lg font-bold">Presentes: ${report.present}</p>
+                        <p class="text-gray-600 mt-2">${report.notes || 'Sem observações.'}</p>
+                        <button class="absolute top-2 right-2 text-red-500 hover:text-red-700 transition-colors duration-200" onclick="deleteReport('${reportId}')">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 112 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    `;
+                    reportsList.appendChild(reportEl);
+                });
+            });
         }
-    }
 
-    /**
-     * Renderiza o formulário de relatório de célula.
-     */
-    function renderForm() {
-        const formContainer = document.getElementById('form-container');
-        if (!formContainer) return;
+        // Adiciona um novo relatório
+        reportForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!userId) {
+                showStatus("Erro: O utilizador não está autenticado. Por favor, recarregue a página.", true);
+                return;
+            }
 
-        formContainer.innerHTML = `
-            <form id="report-form" class="space-y-6">
-                <!-- Informações básicas -->
-                <div>
-                    <label for="cellLeader" class="block text-sm font-medium text-gray-700">Líder da Célula</label>
-                    <input type="text" id="cellLeader" name="cellLeader" required
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
-                </div>
-                <div>
-                    <label for="cellName" class="block text-sm font-medium text-gray-700">Nome da Célula</label>
-                    <input type="text" id="cellName" name="cellName" required
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
-                </div>
-                <div>
-                    <label for="meetingDate" class="block text-sm font-medium text-gray-700">Data da Reunião</label>
-                    <input type="date" id="meetingDate" name="meetingDate" required
-                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
-                </div>
+            const reportsPath = `/artifacts/${appId}/users/${userId}/reports`;
+            const reportDate = document.getElementById('report-date').value;
+            const reportPresent = parseInt(document.getElementById('report-present').value, 10);
+            const reportNotes = document.getElementById('report-notes').value;
 
-                <!-- Lista de Membros (Presença) -->
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Presença dos Membros</h3>
-                    <div id="members-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <!-- Membros serão carregados dinamicamente aqui -->
-                        ${members.length > 0 ? members.map(member => `
-                            <div class="flex items-center space-x-2 bg-gray-100 p-3 rounded-lg shadow-sm">
-                                <input type="checkbox" id="member-${member.id}" name="members" value="${member.name}" checked
-                                       class="h-5 w-5 rounded text-blue-600 focus:ring-blue-500">
-                                <label for="member-${member.id}" class="text-sm font-medium text-gray-700">${member.name}</label>
-                            </div>
-                        `).join('') : '<p class="text-gray-500">Não há membros cadastrados. Adicione-os no painel acima.</p>'}
-                    </div>
-                </div>
-
-                <!-- Visitantes (campos dinâmicos) -->
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Visitantes</h3>
-                    <div id="visitors-container" class="space-y-4">
-                        <!-- Campos para visitantes serão adicionados aqui -->
-                    </div>
-                    <button type="button" id="add-visitor-btn"
-                            class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        Adicionar Visitante
-                    </button>
-                </div>
-                
-                <!-- Campo de Observações -->
-                <div>
-                    <label for="notes" class="block text-sm font-medium text-gray-700">Observações (opcional)</label>
-                    <textarea id="notes" name="notes" rows="4"
-                              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"></textarea>
-                </div>
-
-                <!-- Botão de submissão -->
-                <button type="submit"
-                        class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
-                    Enviar Relatório
-                </button>
-            </form>
-        `;
-
-        // Adiciona evento ao botão "Adicionar Visitante"
-        document.getElementById('add-visitor-btn').addEventListener('click', addVisitorField);
-        // Adiciona evento de submissão do formulário
-        document.getElementById('report-form').addEventListener('submit', submitReport);
-    }
-
-    /**
-     * Adiciona um novo conjunto de campos para um visitante.
-     */
-    function addVisitorField() {
-        const visitorsContainer = document.getElementById('visitors-container');
-        const visitorIndex = visitorsContainer.children.length;
-        const newVisitorHtml = `
-            <div class="bg-gray-50 rounded-lg p-4 shadow-inner border border-gray-200 visitor-entry space-y-2">
-                <div class="flex items-center justify-between">
-                    <h4 class="font-medium text-gray-800">Visitante #${visitorIndex + 1}</h4>
-                    <button type="button" class="text-red-500 hover:text-red-700 text-sm delete-visitor-btn">Remover</button>
-                </div>
-                <div>
-                    <label for="visitor-name-${visitorIndex}" class="block text-xs font-medium text-gray-700">Nome do Visitante</label>
-                    <input type="text" id="visitor-name-${visitorIndex}" name="visitor-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-1.5 border" required>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <div class="flex items-center space-x-2">
-                        <input type="checkbox" id="visitor-baptized-${visitorIndex}" name="visitor-baptized" class="h-4 w-4 rounded text-blue-600 focus:ring-blue-500">
-                        <label for="visitor-baptized-${visitorIndex}" class="text-xs font-medium text-gray-700">Batizado</label>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <input type="checkbox" id="visitor-encontro-${visitorIndex}" name="visitor-encontro" class="h-4 w-4 rounded text-blue-600 focus:ring-blue-500">
-                        <label for="visitor-encontro-${visitorIndex}" class="text-xs font-medium text-gray-700">Foi ao Encontro</label>
-                    </div>
-                </div>
-            </div>
-        `;
-        visitorsContainer.insertAdjacentHTML('beforeend', newVisitorHtml);
-
-        // Adiciona evento de clique para o novo botão "Remover"
-        const newEntry = visitorsContainer.lastElementChild;
-        newEntry.querySelector('.delete-visitor-btn').addEventListener('click', (e) => {
-            e.target.closest('.visitor-entry').remove();
-        });
-    }
-
-    /**
-     * Lida com a submissão do formulário e salva os dados no Firestore.
-     * @param {Event} event - O evento de submissão do formulário.
-     */
-    async function submitReport(event) {
-        event.preventDefault();
-        showLoading(true);
-
-        const form = event.target;
-        const leader = form.cellLeader.value;
-        const cellName = form.cellName.value;
-        const meetingDate = form.meetingDate.value;
-        const notes = form.notes.value;
-        
-        // Coleta os membros presentes
-        const presentMembers = Array.from(form.elements.members)
-                                    .filter(checkbox => checkbox.checked)
-                                    .map(checkbox => checkbox.value);
-
-        // Coleta os dados dos visitantes
-        const visitors = [];
-        const visitorEntries = document.querySelectorAll('.visitor-entry');
-        visitorEntries.forEach(entry => {
-            const name = entry.querySelector('input[name="visitor-name"]').value;
-            if (name) {
-                const isBaptized = entry.querySelector('input[name="visitor-baptized"]').checked;
-                const wentToEncounter = entry.querySelector('input[name="visitor-encontro"]').checked;
-                visitors.push({ name, isBaptized, wentToEncounter });
+            try {
+                await addDoc(collection(db, reportsPath), {
+                    date: reportDate,
+                    present: reportPresent,
+                    notes: reportNotes,
+                    timestamp: serverTimestamp()
+                });
+                reportForm.reset();
+            } catch (error) {
+                console.error("Erro ao adicionar relatório: ", error);
+                showStatus(`Erro ao adicionar relatório: ${error.message}`, true);
             }
         });
 
-        // Constrói o objeto de dados para o Firestore
-        const reportData = {
-            leader,
-            cellName,
-            meetingDate,
-            presentMembers,
-            absentMembers: members.filter(member => !presentMembers.includes(member.name)).map(member => member.name),
-            visitors,
-            notes,
-            submittedBy: userId,
-            timestamp: serverTimestamp()
+        // Deleta um relatório
+        window.deleteReport = async (reportId) => {
+            if (!userId) {
+                showStatus("Erro: O utilizador não está autenticado.", true);
+                return;
+            }
+            try {
+                const docRef = doc(db, `/artifacts/${appId}/users/${userId}/reports`, reportId);
+                await deleteDoc(docRef);
+            } catch (error) {
+                console.error("Erro ao deletar relatório:", error);
+                showStatus(`Erro ao deletar relatório: ${error.message}`, true);
+            }
         };
 
-        try {
-            const reportsCollectionRef = collection(db, `/artifacts/${appId}/public/data/reports`);
-            await addDoc(reportsCollectionRef, reportData);
-            console.log("Relatório salvo com sucesso!");
-            showMessage("Relatório enviado com sucesso!");
-            form.reset();
-            document.getElementById('visitors-container').innerHTML = ''; // Limpa os campos de visitante
-        } catch (error) {
-            console.error("Erro ao salvar o relatório:", error);
-            showMessage("Erro ao salvar o relatório.");
-        } finally {
-            showLoading(false);
-        }
-    }
-    
-    /**
-     * Configura o listener em tempo real para os relatórios.
-     */
-    function setupRealtimeReports() {
-        if (!userId) {
-            console.error("userId não disponível para carregar relatórios.");
-            return;
-        }
-        
-        const reportsCollectionRef = collection(db, `/artifacts/${appId}/public/data/reports`);
-        
-        const leaderFilterValue = document.getElementById('leader-filter')?.value.toLowerCase();
-        const dateFilterValue = document.getElementById('date-filter')?.value;
-        const sortOrderValue = document.getElementById('sort-order')?.value || 'desc';
+        // --- Funções para Membros ---
 
-        // Cria a query base
-        let q = query(reportsCollectionRef, orderBy('timestamp', sortOrderValue));
-        
-        // Adiciona a cláusula where se houver filtro de data (somente exato)
-        if (dateFilterValue) {
-            q = query(q, where('meetingDate', '==', dateFilterValue));
+        // Carrega os membros do Firestore
+        function loadMembers() {
+            if (!userId) return; // Garante que a autenticação foi concluída
+
+            const membersPath = `/artifacts/${appId}/users/${userId}/members`;
+            const membersQuery = query(collection(db, membersPath));
+
+            onSnapshot(membersQuery, (querySnapshot) => {
+                membersList.innerHTML = '';
+                if (querySnapshot.empty) {
+                    membersList.innerHTML = '<p class="text-center text-gray-500">Nenhum membro adicionado ainda.</p>';
+                    return;
+                }
+                querySnapshot.forEach((doc) => {
+                    const member = doc.data();
+                    const memberId = doc.id;
+                    const memberEl = document.createElement('div');
+                    memberEl.classList.add('bg-white', 'p-4', 'rounded-xl', 'border', 'border-gray-200', 'shadow-sm', 'relative');
+                    memberEl.innerHTML = `
+                        <p class="text-lg font-bold">${member.name}</p>
+                        <p class="text-gray-600">Idade: ${member.age || 'Não especificada'}</p>
+                        <p class="text-gray-600">Contacto: ${member.contact || 'Não especificado'}</p>
+                        <button class="absolute top-2 right-2 text-red-500 hover:text-red-700 transition-colors duration-200" onclick="deleteMember('${memberId}')">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 112 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    `;
+                    membersList.appendChild(memberEl);
+                });
+            });
         }
         
-        onSnapshot(q, (snapshot) => {
-            let reports = [];
-            snapshot.forEach(doc => {
-                reports.push({ id: doc.id, ...doc.data() });
-            });
-            
-            // Filtra os resultados no lado do cliente para a pesquisa de texto
-            if (leaderFilterValue) {
-                reports = reports.filter(report => 
-                    report.leader.toLowerCase().includes(leaderFilterValue) ||
-                    report.cellName.toLowerCase().includes(leaderFilterValue)
-                );
+        // Adiciona um novo membro
+        memberForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!userId) {
+                showStatus("Erro: O utilizador não está autenticado. Por favor, recarregue a página.", true);
+                return;
             }
-            
-            renderReportsTable(reports);
-        }, (error) => {
-            console.error("Erro ao carregar relatórios:", error);
-            document.getElementById('reports-table-container').innerHTML = `<p class="text-red-500">Erro ao carregar os relatórios.</p>`;
+
+            const membersPath = `/artifacts/${appId}/users/${userId}/members`;
+            const memberName = document.getElementById('member-name').value;
+            const memberAge = parseInt(document.getElementById('member-age').value, 10);
+            const memberContact = document.getElementById('member-contact').value;
+
+            try {
+                await addDoc(collection(db, membersPath), {
+                    name: memberName,
+                    age: memberAge || null,
+                    contact: memberContact || null,
+                    timestamp: serverTimestamp()
+                });
+                memberForm.reset();
+            } catch (error) {
+                console.error("Erro ao adicionar membro: ", error);
+                showStatus(`Erro ao adicionar membro: ${error.message}`, true);
+            }
         });
-    }
 
-    /**
-     * Renderiza a tabela de relatórios.
-     * @param {Array<Object>} reports - A lista de relatórios a serem exibidos.
-     */
-    function renderReportsTable(reports) {
-        const reportsContainer = document.getElementById('reports-table-container');
-        if (!reportsContainer) return;
+        // Deleta um membro
+        window.deleteMember = async (memberId) => {
+            if (!userId) {
+                showStatus("Erro: O utilizador não está autenticado.", true);
+                return;
+            }
+            try {
+                const docRef = doc(db, `/artifacts/${appId}/users/${userId}/members`, memberId);
+                await deleteDoc(docRef);
+            } catch (error) {
+                console.error("Erro ao deletar membro:", error);
+                showStatus(`Erro ao deletar membro: ${error.message}`, true);
+            }
+        };
 
-        if (reports.length === 0) {
-            reportsContainer.innerHTML = `<p class="text-gray-500">Nenhum relatório encontrado.</p>`;
-            return;
-        }
+        // Inicia a aplicação
+        window.onload = initializeFirebase;
+    </script>
 
-        const tableHtml = `
-            <div class="overflow-x-auto rounded-lg shadow-md">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Líder / Célula</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Participação</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Visitantes</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Observações</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        ${reports.map(report => `
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm font-medium text-gray-900">${report.leader}</div>
-                                    <div class="text-sm text-gray-500">${report.cellName}</div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900">${report.meetingDate}</div>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div class="text-sm text-gray-900">Presentes: <span class="font-bold">${report.presentMembers.length}/${members.length}</span></div>
-                                    <ul class="text-xs text-gray-500 list-disc list-inside">
-                                        ${report.absentMembers.map(member => `<li class="text-red-500">Ausente: ${member}</li>`).join('')}
-                                    </ul>
-                                </td>
-                                <td class="px-6 py-4">
-                                    ${report.visitors.length > 0 ? `
-                                        <ul class="text-sm text-gray-900 space-y-1">
-                                            ${report.visitors.map(visitor => `
-                                                <li class="p-2 bg-gray-100 rounded-md">
-                                                    <strong>${visitor.name}</strong>
-                                                    <div class="flex flex-col space-y-1 text-xs text-gray-600 mt-1">
-                                                        <span><span class="font-semibold">Batizado:</span> ${visitor.isBaptized ? 'Sim' : 'Não'}</span>
-                                                        <span><span class="font-semibold">Encontro:</span> ${visitor.wentToEncounter ? 'Sim' : 'Não'}</span>
-                                                    </div>
-                                                </li>
-                                            `).join('')}
-                                        </ul>
-                                    ` : '<p class="text-sm text-gray-500">Nenhum visitante.</p>'}
-                                </td>
-                                <td class="px-6 py-4">
-                                    <p class="text-sm text-gray-500 max-w-xs truncate">${report.notes || 'N/A'}</p>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button data-id="${report.id}" class="text-red-600 hover:text-red-900 delete-report-btn">Remover</button>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            </div>
-        `;
-
-        reportsContainer.innerHTML = tableHtml;
-
-        // Adiciona event listeners para os botões de apagar
-        document.querySelectorAll('.delete-report-btn').forEach(button => {
-            button.addEventListener('click', (event) => {
-                reportToDeleteId = event.target.dataset.id;
-                confirmModal.classList.remove('hidden');
-            });
-        });
-    }
-    
-    /**
-     * Apaga um relatório do Firestore.
-     * @param {string} reportId - O ID do documento do relatório a ser apagado.
-     */
-    async function deleteReport(reportId) {
-        showLoading(true);
-        try {
-            const reportDocRef = doc(db, `/artifacts/${appId}/public/data/reports`, reportId);
-            await deleteDoc(reportDocRef);
-            showMessage("Relatório apagado com sucesso!");
-        } catch (error) {
-            console.error("Erro ao apagar relatório:", error);
-            showMessage("Erro ao apagar o relatório.");
-        } finally {
-            showLoading(false);
-        }
-    }
-
-    /**
-     * Configura o listener em tempo real para o painel de gestão de utilizadores.
-     */
-    function setupRealtimeUserManagement() {
-        if (!userId) {
-            console.error("userId não disponível para gestão de utilizadores.");
-            return;
-        }
-        
-        const userProfilesCollectionRef = collection(db, `/artifacts/${appId}/public/data/user_profiles`);
-        
-        onSnapshot(userProfilesCollectionRef, (snapshot) => {
-            const users = [];
-            snapshot.forEach(doc => {
-                users.push({ uid: doc.id, ...doc.data() });
-            });
-            renderUserManagementTable(users);
-        }, (error) => {
-            console.error("Erro ao carregar utilizadores para gestão:", error);
-            document.getElementById('user-management-table-container').innerHTML = `<p class="text-red-500">Erro ao carregar a lista de utilizadores.</p>`;
-        });
-    }
-
-    /**
-     * Renderiza a tabela de gestão de utilizadores.
-     * @param {Array<Object>} users - A lista de utilizadores.
-     */
-    function renderUserManagementTable(users) {
-        const tableContainer = document.getElementById('user-management-table-container');
-        if (!tableContainer) return;
-
-        if (users.length === 0) {
-            tableContainer.innerHTML = `<p class="text-gray-500">Nenhum utilizador encontrado.</p>`;
-            return;
-        }
-
-        const tableHtml = `
-            <div class="overflow-x-auto rounded-lg shadow-md">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">E-mail</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Função</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        ${users.map(user => `
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm font-medium text-gray-900">${user.email}</div>
-                                    <div class="text-xs text-gray-500 font-mono">ID: ${user.uid}</div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}">
-                                        ${user.role}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    ${user.uid === userId ? '<span class="text-gray-400">Você</span>' : `
-                                        <button data-uid="${user.uid}" data-current-role="${user.role}" 
-                                            class="px-3 py-1 text-xs font-medium rounded-md shadow-sm text-white transition-colors
-                                            ${user.role === 'admin' ? 'bg-green-600 hover:bg-green-700 change-role-btn' : 'bg-blue-600 hover:bg-blue-700 change-role-btn'}">
-                                            ${user.role === 'admin' ? 'Tornar Líder' : 'Tornar Admin'}
-                                        </button>
-                                    `}
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            </div>
-        `;
-        tableContainer.innerHTML = tableHtml;
-
-        // Adiciona event listeners para os botões de mudança de função
-        document.querySelectorAll('.change-role-btn').forEach(button => {
-            button.addEventListener('click', (event) => {
-                const targetUid = event.target.dataset.uid;
-                const currentRole = event.target.dataset.currentRole;
-                const newRole = currentRole === 'admin' ? 'leader' : 'admin';
-                updateUserRole(targetUid, newRole);
-            });
-        });
-    }
-
-    /**
-     * Atualiza a função de um utilizador no Firestore.
-     * @param {string} uid - O ID do utilizador a ser atualizado.
-     * @param {string} newRole - A nova função ('admin' ou 'leader').
-     */
-    async function updateUserRole(uid, newRole) {
-        showLoading(true);
-        try {
-            const userDocRef = doc(db, `/artifacts/${appId}/public/data/user_profiles`, uid);
-            await setDoc(userDocRef, { role: newRole }, { merge: true });
-            showMessage(`Função de utilizador atualizada para '${newRole}' com sucesso!`);
-        } catch (error) {
-            console.error("Erro ao atualizar a função do utilizador:", error);
-            showMessage("Erro ao atualizar a função do utilizador.");
-        } finally {
-            showLoading(false);
-        }
-    }
-    
-    // Inicia a aplicação
-    initializeAppAndFirebase();
-
-</script>
 </body>
 </html>
