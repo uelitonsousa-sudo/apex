@@ -22,7 +22,7 @@
                 Gestão de Células
             </h1>
             <p class="text-sm text-gray-500 mt-1">
-                Versão v3.0 - A usar nova chave de API
+                Versão v4.0 - Com fallback para configuração do Firebase
             </p>
         </header>
 
@@ -135,11 +135,24 @@
         async function initializeFirebase() {
             showStatus('A carregar...');
             try {
-                if (!firebaseConfigRaw) {
-                    throw new Error("A sua configuração do Firebase não foi encontrada. Por favor, adicione-a no topo do código.");
-                }
+                let firebaseConfig;
 
-                const firebaseConfig = JSON.parse(firebaseConfigRaw);
+                // Tenta usar a configuração do ambiente, se disponível
+                if (firebaseConfigRaw) {
+                    firebaseConfig = JSON.parse(firebaseConfigRaw);
+                } else {
+                    // Configuração de fallback, se a do ambiente não estiver disponível
+                    // SUBSTITUA ISTO PELA SUA CONFIGURAÇÃO REAL DO PROJETO FIREBASE
+                    firebaseConfig = {
+                        apiKey: "SUA_API_KEY_AQUI", // Exemplo: "AIzaSyC_xxxxxxxxxxxxxxxxxxxxx"
+                        authDomain: "SUA_AUTH_DOMAIN_AQUI", // Exemplo: "meu-projeto.firebaseapp.com"
+                        projectId: "SEU_PROJECT_ID_AQUI", // Exemplo: "meu-projeto"
+                        storageBucket: "SEU_STORAGE_BUCKET_AQUI", // Exemplo: "meu-projeto.appspot.com"
+                        messagingSenderId: "SEU_MESSAGING_SENDER_ID_AQUI", // Exemplo: "123456789012"
+                        appId: "SEU_APP_ID_AQUI" // Exemplo: "1:123456789012:web:abcdefg1234567890"
+                    };
+                    showStatus("Aviso: Configuração do Firebase do ambiente não encontrada. A usar configuração de fallback.", true);
+                }
 
                 // Inicializa a aplicação e serviços do Firebase
                 const app = initializeApp(firebaseConfig);
