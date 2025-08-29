@@ -2,9 +2,11 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gestão de Células – MVP</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+  </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
   <header class="bg-white shadow sticky top-0 z-10 p-4 flex justify-between items-center">
@@ -24,46 +26,41 @@
 
       <div>
         <label class="block text-sm text-gray-700">Nome do Líder</label>
-        <input id="inputLider" type="text" class="mt-1 w-full rounded-md border-gray-300 p-2" placeholder="Seu nome">
+        <input id="inputLider" type="text" class="mt-1 w-full rounded-md border-gray-300 p-2" placeholder="Seu nome" />
       </div>
 
       <div>
         <label class="block text-sm text-gray-700">Data da Célula</label>
-        <input id="inputData" type="date" class="mt-1 w-full rounded-md border-gray-300 p-2">
+        <input id="inputData" type="date" class="mt-1 w-full rounded-md border-gray-300 p-2" />
       </div>
 
-      <div class="grid md:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm text-gray-700">Membro</label>
-          <div class="flex gap-2">
-            <input id="inputMembro" type="text" class="flex-1 rounded-md border-gray-300 p-2" placeholder="Nome do membro">
-            <button id="btnAddMembro" class="px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700">+</button>
-          </div>
-        </div>
-        <div>
-          <label class="block text-sm text-gray-700">Visitante</label>
-          <div class="flex gap-2">
-            <input id="inputVisitante" type="text" class="flex-1 rounded-md border-gray-300 p-2" placeholder="Nome do visitante">
-            <button id="btnAddVisitante" class="px-3 py-1.5 rounded-lg bg-yellow-600 text-white hover:bg-yellow-700">+</button>
-          </div>
+      <div class="space-y-2">
+        <h3 class="font-medium">Membros</h3>
+        <div class="flex gap-2">
+          <input id="inputMembro" type="text" placeholder="Nome do membro" class="mt-1 w-full rounded-md border-gray-300 p-2" />
+          <button id="btnAddMembro" class="px-3 py-1.5 text-sm rounded-lg bg-green-600 text-white hover:bg-green-700">+</button>
         </div>
       </div>
 
-      <div>
-        <h3 class="font-medium mb-2">Participantes</h3>
-        <table class="w-full border-collapse">
-          <thead>
-            <tr>
-              <th class="border px-2 py-1 text-left">Nome</th>
-              <th class="border px-2 py-1 text-left">Tipo</th>
-            </tr>
-          </thead>
-          <tbody id="tabelaParticipantes">
-          </tbody>
-        </table>
+      <div class="space-y-2">
+        <h3 class="font-medium">Visitantes</h3>
+        <div class="flex gap-2">
+          <input id="inputVisitante" type="text" placeholder="Nome do visitante" class="mt-1 w-full rounded-md border-gray-300 p-2" />
+          <button id="btnAddVisitante" class="px-3 py-1.5 text-sm rounded-lg bg-yellow-600 text-white hover:bg-yellow-700">+</button>
+        </div>
       </div>
 
-      <button id="btnSalvarCelula" class="px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700">Salvar Célula</button>
+      <table class="min-w-full bg-white border mt-4">
+        <thead>
+          <tr class="bg-gray-200">
+            <th class="py-2 px-4 border">Nome</th>
+            <th class="py-2 px-4 border">Tipo</th>
+          </tr>
+        </thead>
+        <tbody id="listaParticipantes"></tbody>
+      </table>
+
+      <button id="btnSalvarCelula" class="mt-4 px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700">Salvar Célula</button>
     </section>
   </main>
 
@@ -94,25 +91,25 @@
     const status = document.getElementById("status");
     const leaderForm = document.getElementById("leaderForm");
 
-    let participantes = [];
-
-    // --- Login ---
+    // Login
     loginBtn.addEventListener("click", async () => {
       try { await signInWithPopup(auth, provider); }
       catch (e) { alert("Erro no login: " + e.message); }
     });
 
+    // Logout
     logoutBtn.addEventListener("click", async () => { await signOut(auth); });
 
-    onAuthStateChanged(auth, (user) => {
+    // Estado de autenticação
+    onAuthStateChanged(auth, async (user) => {
       if (user) {
         status.textContent = `Logado como: ${user.displayName}`;
         loginBtn.style.display = "none";
         logoutBtn.style.display = "inline-block";
         leaderForm.classList.remove("hidden");
+
         document.getElementById("inputLider").value = user.displayName || "";
-        const today = new Date();
-        document.getElementById("inputData").value = today.toISOString().slice(0,10);
+        document.getElementById("inputData").value = new Date().toISOString().slice(0,10);
       } else {
         status.textContent = "Não logado";
         loginBtn.style.display = "inline-block";
@@ -121,62 +118,61 @@
       }
     });
 
-    const tabela = document.getElementById("tabelaParticipantes");
+    let participantes = [];
 
-    function renderTabela() {
-      tabela.innerHTML = "";
-      const membros = participantes.filter(p => p.tipo === "Membro");
-      const visitantes = participantes.filter(p => p.tipo === "Visitante");
-      const listaOrdenada = [...membros, ...visitantes];
-      listaOrdenada.forEach(p => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td class="border px-2 py-1">${p.nome}</td><td class="border px-2 py-1">${p.tipo}</td>`;
-        tabela.appendChild(tr);
+    const listaParticipantes = document.getElementById("listaParticipantes");
+    const inputMembro = document.getElementById("inputMembro");
+    const inputVisitante = document.getElementById("inputVisitante");
+
+    function atualizarTabela() {
+      // Membros primeiro
+      const sorted = participantes.sort((a,b) => (a.tipo === 'Membro' ? -1 : 1));
+      listaParticipantes.innerHTML = '';
+      sorted.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td class="py-2 px-4 border">${p.nome}</td><td class="py-2 px-4 border">${p.tipo}</td>`;
+        listaParticipantes.appendChild(tr);
       });
     }
 
-    document.getElementById("btnAddMembro").addEventListener("click", () => {
-      const nome = document.getElementById("inputMembro").value.trim();
-      if (!nome) return;
-      participantes.push({ nome, tipo: "Membro" });
-      document.getElementById("inputMembro").value = "";
-      renderTabela();
+    document.getElementById("btnAddMembro").addEventListener("click", (e) => {
+      e.preventDefault();
+      const nome = inputMembro.value.trim();
+      if(!nome) return;
+      participantes.push({ nome, tipo: 'Membro' });
+      inputMembro.value = '';
+      atualizarTabela();
     });
 
-    document.getElementById("btnAddVisitante").addEventListener("click", () => {
-      const nome = document.getElementById("inputVisitante").value.trim();
-      if (!nome) return;
-      participantes.push({ nome, tipo: "Visitante" });
-      document.getElementById("inputVisitante").value = "";
-      renderTabela();
+    document.getElementById("btnAddVisitante").addEventListener("click", (e) => {
+      e.preventDefault();
+      const nome = inputVisitante.value.trim();
+      if(!nome) return;
+      participantes.push({ nome, tipo: 'Visitante' });
+      inputVisitante.value = '';
+      atualizarTabela();
     });
 
     document.getElementById("btnSalvarCelula").addEventListener("click", async () => {
       const liderNome = document.getElementById("inputLider").value.trim();
       const data = document.getElementById("inputData").value;
-      if (!liderNome || !data || participantes.length === 0) { 
-        alert("Preencha todos os campos e adicione pelo menos um participante"); 
-        return; 
+      if(!liderNome || !data || participantes.length === 0) {
+        alert("Preencha todos os campos e adicione pelo menos um participante.");
+        return;
       }
 
-      try {
-        await addDoc(collection(db, "celulas"), {
-          liderNome,
-          data: new Date(data),
-          participantes,
-          criadoEm: new Date()
-        });
-        alert("Célula salva com sucesso!");
-        // --- Limpar formulário ---
-        participantes = [];
-        renderTabela();
-        document.getElementById("inputMembro").value = "";
-        document.getElementById("inputVisitante").value = "";
-        const today = new Date();
-        document.getElementById("inputData").value = today.toISOString().slice(0,10);
-      } catch (e) {
-        alert("Erro ao salvar: " + e.message);
-      }
+      await addDoc(collection(db,'celulas'), {
+        liderNome,
+        data: new Date(data),
+        participantes,
+        criadoEm: new Date()
+      });
+
+      alert("Célula salva com sucesso!");
+      // Limpa campos
+      participantes = [];
+      atualizarTabela();
+      document.getElementById("inputData").value = new Date().toISOString().slice(0,10);
     });
   </script>
 </body>
