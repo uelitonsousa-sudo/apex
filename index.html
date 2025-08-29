@@ -9,6 +9,7 @@
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
+
   <header class="bg-white shadow sticky top-0 z-10 p-4 flex justify-between items-center">
     <h1 class="text-xl font-bold text-blue-700">Gestão de Células – MVP</h1>
     <div>
@@ -34,36 +35,34 @@
         <input id="inputData" type="date" class="mt-1 w-full rounded-md border-gray-300 p-2" />
       </div>
 
-      <div class="space-y-2">
-        <h3 class="font-medium">Membros</h3>
-        <div class="flex gap-2">
-          <input id="inputMembro" type="text" placeholder="Nome do membro" class="mt-1 w-full rounded-md border-gray-300 p-2" />
-          <button id="btnAddMembro" class="px-3 py-1.5 text-sm rounded-lg bg-green-600 text-white hover:bg-green-700">+</button>
-        </div>
+      <!-- Campo Membros -->
+      <div class="flex gap-2 items-center">
+        <input id="inputMembro" type="text" placeholder="Nome do membro" class="flex-1 rounded-md border-gray-300 p-2" />
+        <button id="btnAddMembro" class="px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700">+</button>
       </div>
 
-      <div class="space-y-2">
-        <h3 class="font-medium">Visitantes</h3>
-        <div class="flex gap-2">
-          <input id="inputVisitante" type="text" placeholder="Nome do visitante" class="mt-1 w-full rounded-md border-gray-300 p-2" />
-          <button id="btnAddVisitante" class="px-3 py-1.5 text-sm rounded-lg bg-yellow-600 text-white hover:bg-yellow-700">+</button>
-        </div>
+      <!-- Campo Visitantes -->
+      <div class="flex gap-2 items-center">
+        <input id="inputVisitante" type="text" placeholder="Nome do visitante" class="flex-1 rounded-md border-gray-300 p-2" />
+        <button id="btnAddVisitante" class="px-3 py-1.5 rounded-lg bg-yellow-500 text-white hover:bg-yellow-600">+</button>
       </div>
 
-      <table class="min-w-full bg-white border mt-4">
+      <!-- Tabela de Participantes -->
+      <table class="w-full mt-4 border-collapse">
         <thead>
-          <tr class="bg-gray-200">
-            <th class="py-2 px-4 border">Nome</th>
-            <th class="py-2 px-4 border">Tipo</th>
+          <tr>
+            <th class="border px-2 py-1 text-left">Nome</th>
+            <th class="border px-2 py-1 text-left">Tipo</th>
           </tr>
         </thead>
-        <tbody id="listaParticipantes"></tbody>
+        <tbody id="tabelaParticipantesBody"></tbody>
       </table>
 
       <button id="btnSalvarCelula" class="mt-4 px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700">Salvar Célula</button>
     </section>
   </main>
 
+  <!-- Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } 
@@ -91,23 +90,23 @@
     const status = document.getElementById("status");
     const leaderForm = document.getElementById("leaderForm");
 
+    // Participantes temporários
+    let participantes = [];
+
     // Login
     loginBtn.addEventListener("click", async () => {
       try { await signInWithPopup(auth, provider); }
       catch (e) { alert("Erro no login: " + e.message); }
     });
 
-    // Logout
     logoutBtn.addEventListener("click", async () => { await signOut(auth); });
 
-    // Estado de autenticação
-    onAuthStateChanged(auth, async (user) => {
+    onAuthStateChanged(auth, (user) => {
       if (user) {
         status.textContent = `Logado como: ${user.displayName}`;
         loginBtn.style.display = "none";
         logoutBtn.style.display = "inline-block";
         leaderForm.classList.remove("hidden");
-
         document.getElementById("inputLider").value = user.displayName || "";
         document.getElementById("inputData").value = new Date().toISOString().slice(0,10);
       } else {
@@ -118,62 +117,59 @@
       }
     });
 
-    let participantes = [];
+    const tabelaBody = document.getElementById("tabelaParticipantesBody");
 
-    const listaParticipantes = document.getElementById("listaParticipantes");
-    const inputMembro = document.getElementById("inputMembro");
-    const inputVisitante = document.getElementById("inputVisitante");
-
-    function atualizarTabela() {
+    function renderTabela() {
+      tabelaBody.innerHTML = "";
       // Membros primeiro
-      const sorted = participantes.sort((a,b) => (a.tipo === 'Membro' ? -1 : 1));
-      listaParticipantes.innerHTML = '';
-      sorted.forEach(p => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td class="py-2 px-4 border">${p.nome}</td><td class="py-2 px-4 border">${p.tipo}</td>`;
-        listaParticipantes.appendChild(tr);
-      });
+      participantes
+        .sort((a,b) => (a.tipo === "visitante") - (b.tipo === "visitante"))
+        .forEach(p => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td class="border px-2 py-1">${p.nome}</td><td class="border px-2 py-1">${p.tipo}</td>`;
+          tabelaBody.appendChild(tr);
+        });
     }
 
-    document.getElementById("btnAddMembro").addEventListener("click", (e) => {
-      e.preventDefault();
-      const nome = inputMembro.value.trim();
-      if(!nome) return;
-      participantes.push({ nome, tipo: 'Membro' });
-      inputMembro.value = '';
-      atualizarTabela();
+    document.getElementById("btnAddMembro").addEventListener("click", () => {
+      const nome = document.getElementById("inputMembro").value.trim();
+      if (!nome) return;
+      participantes.push({ nome, tipo: "membro" });
+      renderTabela();
+      document.getElementById("inputMembro").value = "";
     });
 
-    document.getElementById("btnAddVisitante").addEventListener("click", (e) => {
-      e.preventDefault();
-      const nome = inputVisitante.value.trim();
-      if(!nome) return;
-      participantes.push({ nome, tipo: 'Visitante' });
-      inputVisitante.value = '';
-      atualizarTabela();
+    document.getElementById("btnAddVisitante").addEventListener("click", () => {
+      const nome = document.getElementById("inputVisitante").value.trim();
+      if (!nome) return;
+      participantes.push({ nome, tipo: "visitante" });
+      renderTabela();
+      document.getElementById("inputVisitante").value = "";
     });
 
+    // Salvar célula
     document.getElementById("btnSalvarCelula").addEventListener("click", async () => {
       const liderNome = document.getElementById("inputLider").value.trim();
       const data = document.getElementById("inputData").value;
-      if(!liderNome || !data || participantes.length === 0) {
-        alert("Preencha todos os campos e adicione pelo menos um participante.");
-        return;
-      }
+      if (!liderNome || !data) { alert("Preencha líder e data"); return; }
+      const participantesIds = participantes.map(p => p.nome); // ou gerar IDs únicos se necessário
 
-      await addDoc(collection(db,'celulas'), {
+      // Salvar no Firestore
+      await addDoc(collection(db, 'celulas'), {
         liderNome,
         data: new Date(data),
-        participantes,
+        participantes: participantesIds,
         criadoEm: new Date()
       });
 
       alert("Célula salva com sucesso!");
-      // Limpa campos
-      participantes = [];
-      atualizarTabela();
+
+      // Limpar formulário
       document.getElementById("inputData").value = new Date().toISOString().slice(0,10);
+      participantes = [];
+      renderTabela();
     });
   </script>
+
 </body>
 </html>
