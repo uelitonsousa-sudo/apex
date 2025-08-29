@@ -1,344 +1,183 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de Células</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-            color: #1f2937;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestão de Células – MVP</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
-
-    <div id="app-container" class="bg-white p-6 md:p-8 rounded-2xl shadow-xl w-full max-w-4xl space-y-8">
-        <!-- Título da Aplicação -->
-        <header class="text-center">
-            <h1 class="text-3xl md:text-4xl font-extrabold text-blue-800">
-                Gestão de Células
-            </h1>
-            <p class="text-sm text-gray-500 mt-1">
-                Versão v11.0 - Correção de Sintaxe JSON
-            </p>
-        </header>
-
-        <!-- Mensagem de status do Firebase -->
-        <div id="status-message" class="hidden p-4 rounded-xl bg-red-100 text-red-700 text-center font-semibold">
-            <p>A carregar...</p>
-        </div>
-
-        <!-- Seção de Relatórios -->
-        <section class="space-y-6">
-            <div class="flex items-center justify-between">
-                <h2 class="text-2xl font-bold text-gray-800">Relatórios de Célula</h2>
-            </div>
-            
-            <form id="report-form" class="bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
-                <div class="grid md:grid-cols-2 gap-4">
-                    <div>
-                        <label for="report-date" class="block text-sm font-medium text-gray-700">Data do Relatório</label>
-                        <input type="date" id="report-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 transition-colors duration-200 p-2 border" required>
-                    </div>
-                    <div>
-                        <label for="report-present" class="block text-sm font-medium text-gray-700">Presentes</label>
-                        <input type="number" id="report-present" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 transition-colors duration-200 p-2 border" required>
-                    </div>
-                </div>
-                <div>
-                        <label for="report-notes" class="block text-sm font-medium text-gray-700">Observações</label>
-                        <textarea id="report-notes" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 transition-colors duration-200 p-2 border"></textarea>
-                </div>
-                <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
-                    Adicionar Relatório
-                </button>
-            </form>
-
-            <div id="reports-list" class="space-y-4">
-                <!-- Relatórios serão adicionados aqui -->
-            </div>
-        </section>
-        
-        <!-- --- -->
-
-        <!-- Seção de Membros -->
-        <section class="space-y-6">
-            <div class="flex items-center justify-between">
-                <h2 class="text-2xl font-bold text-gray-800">Membros da Célula</h2>
-            </div>
-
-            <form id="member-form" class="bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
-                <div class="grid md:grid-cols-2 gap-4">
-                    <div>
-                        <label for="member-name" class="block text-sm font-medium text-gray-700">Nome do Membro</label>
-                        <input type="text" id="member-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 transition-colors duration-200 p-2 border" required>
-                    </div>
-                    <div>
-                        <label for="member-age" class="block text-sm font-medium text-gray-700">Idade</label>
-                        <input type="number" id="member-age" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 transition-colors duration-200 p-2 border">
-                    </div>
-                </div>
-                <div>
-                    <label for="member-contact" class="block text-sm font-medium text-gray-700">Contacto</label>
-                    <input type="tel" id="member-contact" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 transition-colors duration-200 p-2 border">
-                </div>
-                <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
-                    Adicionar Membro
-                </button>
-            </form>
-
-            <div id="members-list" class="space-y-4">
-                <!-- Membros serão adicionados aqui -->
-            </div>
-        </section>
-
+<body class="bg-gray-100 min-h-screen">
+  <header class="bg-white shadow sticky top-0 z-10 p-4 flex justify-between items-center">
+    <h1 class="text-xl font-bold text-blue-700">Gestão de Células – MVP</h1>
+    <div>
+      <button id="loginBtn" class="px-3 py-1.5 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700">Login com Google</button>
+      <button id="logoutBtn" style="display:none;" class="px-3 py-1.5 text-sm rounded-lg bg-gray-200 hover:bg-gray-300">Sair</button>
     </div>
+  </header>
 
-    <!-- Scripts do Firebase -->
-    <script type="module">
-        // Importa os módulos necessários do Firebase
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, addDoc, onSnapshot, collection, query, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+  <main class="max-w-3xl mx-auto p-4">
+    <p id="status" class="mb-4">Não logado</p>
 
-        // Variáveis globais fornecidas pelo ambiente do Canvas.
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfigRaw = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+    <!-- Formulário do Líder -->
+    <section id="leaderForm" class="hidden bg-white rounded-2xl shadow p-4 space-y-4">
+      <h2 class="text-lg font-semibold">Registrar Célula</h2>
 
-        let db, auth;
-        let userId;
+      <div>
+        <label class="block text-sm text-gray-700">Nome do Líder</label>
+        <input id="inputLider" type="text" class="mt-1 w-full rounded-md border-gray-300 p-2" placeholder="Seu nome">
+      </div>
 
-        const statusMessageEl = document.getElementById('status-message');
-        const reportForm = document.getElementById('report-form');
-        const memberForm = document.getElementById('member-form');
-        const reportsList = document.getElementById('reports-list');
-        const membersList = document.getElementById('members-list');
+      <div>
+        <label class="block text-sm text-gray-700">Data da Célula</label>
+        <input id="inputData" type="date" class="mt-1 w-full rounded-md border-gray-300 p-2">
+      </div>
 
-        // Função para mostrar mensagens de status
-        function showStatus(message, isError = false) {
-            statusMessageEl.textContent = message;
-            statusMessageEl.classList.remove('hidden');
-            statusMessageEl.classList.toggle('bg-red-100', isError);
-            statusMessageEl.classList.toggle('text-red-700', isError);
-            statusMessageEl.classList.toggle('bg-blue-100', !isError);
-            statusMessageEl.classList.toggle('text-blue-700', !isError);
-        }
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm text-gray-700">Membro</label>
+          <div class="flex gap-2">
+            <input id="inputMembro" type="text" class="flex-1 rounded-md border-gray-300 p-2" placeholder="Nome do membro">
+            <button id="btnAddMembro" class="px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700">+</button>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm text-gray-700">Visitante</label>
+          <div class="flex gap-2">
+            <input id="inputVisitante" type="text" class="flex-1 rounded-md border-gray-300 p-2" placeholder="Nome do visitante">
+            <button id="btnAddVisitante" class="px-3 py-1.5 rounded-lg bg-yellow-600 text-white hover:bg-yellow-700">+</button>
+          </div>
+        </div>
+      </div>
 
-        // Função para inicializar o Firebase
-        async function initializeFirebase() {
-            showStatus('A carregar...');
-            try {
-                if (!firebaseConfigRaw) {
-                    showStatus("Erro: Configuração do Firebase não encontrada. Não é possível iniciar a aplicação. Por favor, verifique a documentação da sua plataforma.", true);
-                    return;
-                }
+      <div>
+        <h3 class="font-medium mb-2">Participantes</h3>
+        <table class="w-full border-collapse">
+          <thead>
+            <tr>
+              <th class="border px-2 py-1 text-left">Nome</th>
+              <th class="border px-2 py-1 text-left">Tipo</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaParticipantes">
+          </tbody>
+        </table>
+      </div>
 
-                const firebaseConfig = JSON.parse(firebaseConfigRaw);
+      <button id="btnSalvarCelula" class="px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700">Salvar Célula</button>
+    </section>
+  </main>
 
-                // Inicializa a aplicação e serviços do Firebase
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } 
+      from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc } 
+      from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-                // Autentica o utilizador
-                await new Promise((resolve, reject) => {
-                    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-                        unsubscribe();
-                        if (user) {
-                            userId = user.uid;
-                            showStatus(`Autenticado com sucesso. ID do utilizador: ${userId}`, false);
-                            resolve();
-                        } else {
-                            try {
-                                if (initialAuthToken) {
-                                    const userCredential = await signInWithCustomToken(auth, initialAuthToken);
-                                    userId = userCredential.user.uid;
-                                    showStatus(`Autenticado com sucesso. ID do utilizador: ${userId}`, false);
-                                } else {
-                                    const userCredential = await signInAnonymously(auth);
-                                    userId = userCredential.user.uid;
-                                    showStatus(`A utilizar modo anónimo. ID do utilizador: ${userId}`, false);
-                                }
-                                resolve();
-                            } catch (error) {
-                                showStatus(`Erro ao autenticar: ${error.message}`, true);
-                                reject(error);
-                            }
-                        }
-                    });
-                });
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBcMx2Ts6E7NBejYpr46Lf2NGwaGEpZQTo",
+      authDomain: "gestao-celulas.firebaseapp.com",
+      projectId: "gestao-celulas",
+      storageBucket: "gestao-celulas.firebasestorage.app",
+      messagingSenderId: "757537601375",
+      appId: "1:757537601375:web:8ce78b40552a1ce5a8e8ea"
+    };
 
-                // Carrega os dados após a autenticação
-                loadReports();
-                loadMembers();
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
 
-            } catch (error) {
-                console.error("Erro de inicialização do Firebase:", error);
-                showStatus(`Erro ao inicializar a aplicação: ${error.message}. Por favor, verifique a sua configuração do Firebase.`, true);
-            }
-        }
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const status = document.getElementById("status");
+    const leaderForm = document.getElementById("leaderForm");
 
-        // --- Funções para Relatórios ---
+    let participantes = [];
 
-        // Carrega os relatórios do Firestore
-        function loadReports() {
-            if (!userId) return;
+    // --- Login ---
+    loginBtn.addEventListener("click", async () => {
+      try { await signInWithPopup(auth, provider); }
+      catch (e) { alert("Erro no login: " + e.message); }
+    });
 
-            const reportsPath = `/artifacts/${appId}/users/${userId}/reports`;
-            const reportsQuery = query(collection(db, reportsPath));
+    logoutBtn.addEventListener("click", async () => { await signOut(auth); });
 
-            onSnapshot(reportsQuery, (querySnapshot) => {
-                reportsList.innerHTML = '';
-                if (querySnapshot.empty) {
-                    reportsList.innerHTML = '<p class="text-center text-gray-500">Nenhum relatório adicionado ainda.</p>';
-                    return;
-                }
-                querySnapshot.forEach((doc) => {
-                    const report = doc.data();
-                    const reportId = doc.id;
-                    const reportEl = document.createElement('div');
-                    reportEl.classList.add('bg-white', 'p-4', 'rounded-xl', 'border', 'border-gray-200', 'shadow-sm', 'relative');
-                    reportEl.innerHTML = `
-                        <p class="text-sm text-gray-500"><strong>Data:</strong> ${new Date(report.date).toLocaleDateString()}</p>
-                        <p class="text-lg font-bold">Presentes: ${report.present}</p>
-                        <p class="text-gray-600 mt-2">${report.notes || 'Sem observações.'}</p>
-                        <button class="absolute top-2 right-2 text-red-500 hover:text-red-700 transition-colors duration-200" onclick="deleteReport('${reportId}')">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 112 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
-                    `;
-                    reportsList.appendChild(reportEl);
-                });
-            });
-        }
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        status.textContent = `Logado como: ${user.displayName}`;
+        loginBtn.style.display = "none";
+        logoutBtn.style.display = "inline-block";
+        leaderForm.classList.remove("hidden");
+        document.getElementById("inputLider").value = user.displayName || "";
+        const today = new Date();
+        document.getElementById("inputData").value = today.toISOString().slice(0,10);
+      } else {
+        status.textContent = "Não logado";
+        loginBtn.style.display = "inline-block";
+        logoutBtn.style.display = "none";
+        leaderForm.classList.add("hidden");
+      }
+    });
 
-        // Adiciona um novo relatório
-        reportForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!userId) {
-                showStatus("Erro: O utilizador não está autenticado. Por favor, recarregue a página.", true);
-                return;
-            }
+    const tabela = document.getElementById("tabelaParticipantes");
 
-            const reportsPath = `/artifacts/${appId}/users/${userId}/reports`;
-            const reportDate = document.getElementById('report-date').value;
-            const reportPresent = parseInt(document.getElementById('report-present').value, 10);
-            const reportNotes = document.getElementById('report-notes').value;
+    function renderTabela() {
+      tabela.innerHTML = "";
+      const membros = participantes.filter(p => p.tipo === "Membro");
+      const visitantes = participantes.filter(p => p.tipo === "Visitante");
+      const listaOrdenada = [...membros, ...visitantes];
+      listaOrdenada.forEach(p => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td class="border px-2 py-1">${p.nome}</td><td class="border px-2 py-1">${p.tipo}</td>`;
+        tabela.appendChild(tr);
+      });
+    }
 
-            try {
-                await addDoc(collection(db, reportsPath), {
-                    date: reportDate,
-                    present: reportPresent,
-                    notes: reportNotes,
-                    timestamp: serverTimestamp()
-                });
-                reportForm.reset();
-            } catch (error) {
-                console.error("Erro ao adicionar relatório: ", error);
-                showStatus(`Erro ao adicionar relatório: ${error.message}`, true);
-            }
+    document.getElementById("btnAddMembro").addEventListener("click", () => {
+      const nome = document.getElementById("inputMembro").value.trim();
+      if (!nome) return;
+      participantes.push({ nome, tipo: "Membro" });
+      document.getElementById("inputMembro").value = "";
+      renderTabela();
+    });
+
+    document.getElementById("btnAddVisitante").addEventListener("click", () => {
+      const nome = document.getElementById("inputVisitante").value.trim();
+      if (!nome) return;
+      participantes.push({ nome, tipo: "Visitante" });
+      document.getElementById("inputVisitante").value = "";
+      renderTabela();
+    });
+
+    document.getElementById("btnSalvarCelula").addEventListener("click", async () => {
+      const liderNome = document.getElementById("inputLider").value.trim();
+      const data = document.getElementById("inputData").value;
+      if (!liderNome || !data || participantes.length === 0) { 
+        alert("Preencha todos os campos e adicione pelo menos um participante"); 
+        return; 
+      }
+
+      try {
+        await addDoc(collection(db, "celulas"), {
+          liderNome,
+          data: new Date(data),
+          participantes,
+          criadoEm: new Date()
         });
-
-        // Deleta um relatório
-        window.deleteReport = async (reportId) => {
-            if (!userId) {
-                showStatus("Erro: O utilizador não está autenticado.", true);
-                return;
-            }
-            try {
-                const docRef = doc(db, `/artifacts/${appId}/users/${userId}/reports`, reportId);
-                await deleteDoc(docRef);
-            } catch (error) {
-                console.error("Erro ao deletar relatório:", error);
-                showStatus(`Erro ao deletar relatório: ${error.message}`, true);
-            }
-        };
-
-        // --- Funções para Membros ---
-
-        // Carrega os membros do Firestore
-        function loadMembers() {
-            if (!userId) return;
-
-            const membersPath = `/artifacts/${appId}/users/${userId}/members`;
-            const membersQuery = query(collection(db, membersPath));
-
-            onSnapshot(membersQuery, (querySnapshot) => {
-                membersList.innerHTML = '';
-                if (querySnapshot.empty) {
-                    membersList.innerHTML = '<p class="text-center text-gray-500">Nenhum membro adicionado ainda.</p>';
-                    return;
-                }
-                querySnapshot.forEach((doc) => {
-                    const member = doc.data();
-                    const memberId = doc.id;
-                    const memberEl = document.createElement('div');
-                    memberEl.classList.add('bg-white', 'p-4', 'rounded-xl', 'border', 'border-gray-200', 'shadow-sm', 'relative');
-                    memberEl.innerHTML = `
-                        <p class="text-lg font-bold">${member.name}</p>
-                        <p class="text-gray-600">Idade: ${member.age || 'Não especificada'}</p>
-                        <p class="text-gray-600">Contacto: ${member.contact || 'Não especificado'}</p>
-                        <button class="absolute top-2 right-2 text-red-500 hover:text-red-700 transition-colors duration-200" onclick="deleteMember('${memberId}')">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 112 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
-                    `;
-                    membersList.appendChild(memberEl);
-                });
-            });
-        }
-        
-        // Adiciona um novo membro
-        memberForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!userId) {
-                showStatus("Erro: O utilizador não está autenticado. Por favor, recarregue a página.", true);
-                return;
-            }
-
-            const membersPath = `/artifacts/${appId}/users/${userId}/members`;
-            const memberName = document.getElementById('member-name').value;
-            const memberAge = parseInt(document.getElementById('member-age').value, 10);
-            const memberContact = document.getElementById('member-contact').value;
-
-            try {
-                await addDoc(collection(db, membersPath), {
-                    name: memberName,
-                    age: memberAge || null,
-                    contact: memberContact || null,
-                    timestamp: serverTimestamp()
-                });
-                memberForm.reset();
-            } catch (error) {
-                console.error("Erro ao adicionar membro: ", error);
-                showStatus(`Erro ao adicionar membro: ${error.message}`, true);
-            }
-        });
-
-        // Deleta um membro
-        window.deleteMember = async (memberId) => {
-            if (!userId) {
-                showStatus("Erro: O utilizador não está autenticado.", true);
-                return;
-            }
-            try {
-                const docRef = doc(db, `/artifacts/${appId}/users/${userId}/members`, memberId);
-                await deleteDoc(docRef);
-            } catch (error) {
-                console.error("Erro ao deletar membro:", error);
-                showStatus(`Erro ao deletar membro: ${error.message}`, true);
-            }
-        };
-
-        // Inicia a aplicação
-        window.onload = initializeFirebase;
-    </script>
-
+        alert("Célula salva com sucesso!");
+        // --- Limpar formulário ---
+        participantes = [];
+        renderTabela();
+        document.getElementById("inputMembro").value = "";
+        document.getElementById("inputVisitante").value = "";
+        const today = new Date();
+        document.getElementById("inputData").value = today.toISOString().slice(0,10);
+      } catch (e) {
+        alert("Erro ao salvar: " + e.message);
+      }
+    });
+  </script>
 </body>
 </html>
